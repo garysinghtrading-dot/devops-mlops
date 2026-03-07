@@ -1,0 +1,15 @@
+# Terraform secrets and state
+terraform-gke/terraform.tfvars
+terraform-gke/terraform.tfstate
+terraform-gke/terraform.tfstate.backup
+terraform-gke/.terraform/
+terraform-gke/.terraform.lock.hcl
+
+# GCP Keys
+gcp-key.json
+
+# .NET and Python ignores
+**/bin/
+**/obj/
+**/__pycache__/
+**/.pytest_cache/

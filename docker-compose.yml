@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # The Backend: Python Flask API
+  python-api-internal:
+    build:
+      context: ./services/python-api
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - API_KEY=dev-secret-key-123
+      # We will mock this or inject it during the CI/CD run
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-key.json
+    volumes:
+      - ./gcp-key.json:/app/gcp-key.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # The Frontend: C# Razor Pages
+  razor-frontend:
+    build:
+      # Updated to match your exact frontend folder
+      context: ./hello-dotn-net-gcp 
+      dockerfile: Dockerfile
+    ports:
+      - "5000:8080" 
+    environment:
+      - PYTHON_API_URL=http://python-api-internal:8080/predict
+      - API_KEY=dev-secret-key-123
+    depends_on:
+      python-api-internal:
+        condition: service_healthy

@@ -1,0 +1,126 @@
+name: CI/CD Pipeline - Test, Build, and Deploy to GCP
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  PROJECT_ID: machine-learning-416604
+  REGION: us-central1
+  REPO_NAME: eviction-microservices-repo # Make sure this matches your Terraform Artifact Registry name
+  CLUSTER_NAME: ml-inference-cluster
+
+jobs:
+  # ---------------------------------------------------------
+  # STAGE 1: Integration Testing
+  # ---------------------------------------------------------
+  integration-test:
+    name: Run Selenium Tests via Docker Compose
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x' # Adjust to 6.0.x or 7.0.x based on your project
+
+    - name: Inject GCP Service Account Key for Testing
+      run: echo "${{ secrets.GCP_CREDENTIALS }}" > gcp-key.json
+
+    - name: Spin up Microservices Environment
+      run: docker-compose up -d --build
+
+    - name: Wait for Python API & Model Download
+      run: sleep 20 # Gives GCS time to download the Random Forest model
+
+    - name: Run Selenium Tests
+      run: dotnet test hello-dotn-net-gcp/EndToEndTests/
+
+    - name: Tear Down Environment
+      if: always()
+      run: docker-compose down
+
+  # ---------------------------------------------------------
+  # STAGE 2: Build and Push Docker Images
+  # ---------------------------------------------------------
+  build-and-push:
+    name: Build and Push to Artifact Registry
+    needs: integration-test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - id: 'auth'
+      name: Authenticate to GCP
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v1'
+
+    - name: Configure Docker Auth
+      run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+    - name: Build and Push Python API
+      run: |
+        IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/python-api:${{ github.sha }}"
+        docker build -t $IMAGE_PATH ./services/python-api
+        docker push $IMAGE_PATH
+
+    - name: Build and Push C# Frontend
+      run: |
+        IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/razor-frontend:${{ github.sha }}"
+        docker build -t $IMAGE_PATH ./hello-dotn-net-gcp
+        docker push $IMAGE_PATH
+
+  # ---------------------------------------------------------
+  # STAGE 3: Deploy Infrastructure and Kubernetes Manifests
+  # ---------------------------------------------------------
+  deploy-infra-and-k8s:
+    name: Apply Terraform & Deploy to GKE
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - id: 'auth'
+      name: Authenticate to GCP
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Terraform Init
+      working-directory: ./terraform-gke
+      run: terraform init
+
+    - name: Terraform Apply
+      working-directory: ./terraform-gke
+      run: terraform apply -auto-approve
+      env:
+        TF_VAR_project_id: ${{ env.PROJECT_ID }}
+        TF_VAR_region: ${{ env.REGION }}
+
+    - name: Get GKE Credentials
+      uses: 'google-github-actions/get-gke-credentials@v1'
+      with:
+        cluster_name: '${{ env.CLUSTER_NAME }}'
+        location: '${{ env.REGION }}-a' # Targeting the zone defined in Terraform
+
+    - name: Inject Git SHA into Kubernetes Manifests
+      run: |
+        # This replaces the hardcoded image tags with the specific commit SHA built in Stage 2
+        sed -i "s|image: .*/python-api:.*|image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/python-api:${{ github.sha }}|g" k8-manifests/python-api.yaml
+        sed -i "s|image: .*/razor-frontend:.*|image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/razor-frontend:${{ github.sha }}|g" k8-manifests/razor-frontend.yaml
+
+    - name: Deploy to GKE
+      run: kubectl apply -f k8-manifests/
