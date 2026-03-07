@@ -24,7 +24,7 @@ services:
   razor-frontend:
     build:
       # Updated to match your exact frontend folder
-      context: ./hello-dotn-net-gcp 
+      context: ./hello-dot-net-gcp 
       dockerfile: Dockerfile
     ports:
       - "5000:8080" 
