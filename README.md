@@ -23,6 +23,90 @@ Born from the operational needs of **Jagpal Holdings Company**, this service add
     * If the probability is $< 0.5$, it confirms a stable profile.
 * **Response:** Results are returned as a clean JSON payload for seamless integration with the C#/.NET frontend.
 
+                          ┌──────────────────────────────────────────┐
+                          │        User Browser (Frontend UI)        │
+                          │  https://jagpalholdings.com/             │
+                          │  /RealEstateEvictionServices             │
+                          └──────────────────────────────────────────┘
+                                           │
+                                           │ 1. User enters:
+                                           │    - MonthlyIncome
+                                           │    - MonthlyDebt
+                                           │    - EmploymentTenure
+                                           │    - YearsAtPrevAddress
+                                           │    - PrevEvictions
+                                           │    - LatePaymentCount
+                                           │    - CreditScore
+                                           │    - ProposedRent
+                                           │
+                                           ▼
+                     ┌──────────────────────────────────────────────┐
+                     │      C#/.NET Razor Pages Frontend App        │
+                     │  (Collects form data & sends POST request)   │
+                     └──────────────────────────────────────────────┘
+                                           │
+                                           │ 2. POST /predict
+                                           ▼
+        ┌────────────────────────────────────────────────────────────────────┐
+        │                     Google Kubernetes Engine (GKE)                 │
+        │                                                                    │
+        │   ┌────────────────────────────────────────────────────────────┐   │
+        │   │                 Eviction Prediction Microservice            │   │
+        │   │                     (Flask API Container)                   │   │
+        │   │                                                            │   │
+        │   │   Routes:                                                  │   │
+        │   │     GET /        → Health check                            │   │
+        │   │     POST /predict → Main inference endpoint                │   │
+        │   │                                                            │   │
+        │   │   Internal Logic:                                          │   │
+        │   │     • Validate JSON payload                                │   │
+        │   │     • Perform proprietary feature engineering              │   │
+        │   │     • Call real_estate_services.make_real_estate_prediction│   │
+        │   │                                                            │   │
+        │   └────────────────────────────────────────────────────────────┘   │
+        │                                                                    │
+        └────────────────────────────────────────────────────────────────────┘
+                                           │
+                                           │ 3. Flask calls service layer
+                                           ▼
+                ┌────────────────────────────────────────────────────────┐
+                │           real_estate_services.py (Service Layer)      │
+                │                                                        │
+                │   • Loads model ONCE using global variable             │
+                │   • Prevents cold starts                               │
+                │   • Orders features using private data_order list      │
+                │   • Calls model.predict_proba()                        │
+                │                                                        │
+                └────────────────────────────────────────────────────────┘
+                                           │
+                                           │ 4. Model loaded from GCS (first call only)
+                                           ▼
+                     ┌──────────────────────────────────────────────┐
+                     │      Google Cloud Storage (GCS Bucket)       │
+                     │   • Stores trained eviction ML model         │
+                     │   • Accessed via google-cloud-storage SDK    │
+                     └──────────────────────────────────────────────┘
+                                           │
+                                           │ 5. Probability returned
+                                           ▼
+        ┌────────────────────────────────────────────────────────────────────┐
+        │                     Flask Microservice Response                    │
+        │                                                                    │
+        │   Returns JSON:                                                    │
+        │   {                                                                │
+        │     "prediction": "<human-readable message>",                      │
+        │     "score": <float probability>,                                  │
+        │     "status": "success"                                            │
+        │   }                                                                │
+        └────────────────────────────────────────────────────────────────────┘
+                                           │
+                                           │ 6. Razor Pages displays result
+                                           ▼
+                          ┌──────────────────────────────────────────┐
+                          │        User Sees Final Prediction        │
+                          └──────────────────────────────────────────┘
+
+
 ---
 
 ## 🛠️ Infrastructure & DevOps Stack
