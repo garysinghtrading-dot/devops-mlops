@@ -8,13 +8,35 @@
 # --- GCP Keys ---
 *.json
 
-# --- .NET and Python Ignores ---
-**/bin/
-**/obj/
-**/__pycache__/
-**/.pytest_cache/
-**/*.joblib
-
 # --- Secrets ---
 *-secrets.yaml
 *-secret.yaml
+*.env
+.env.*
+
+# --- Python ---
+**/__pycache__/
+**/.pytest_cache/
+*.pyc
+*.joblib
+venv/
+.env/
+
+# --- .NET ---
+**/bin/
+**/obj/
+
+# --- OS Junk ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Editor Files ---
+.vscode/
+.idea/
+
+# --- Kubernetes Generated Files ---
+*.generated.yaml
