@@ -7,11 +7,24 @@ import real_estate_services
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
+'''
+    * Testing route to ensure the flask application is running
+'''
 @app.route('/')
 def status():
     """Service availability endpoint."""
     return "Eviction Prediction API - Status: Operational"
 
+'''
+    # When a user visits jagpalholdings.com/RealEstateEvictionServices
+    # This is the backend that application talks to to get an eviction tenant risk prediciton
+    METHOD predict_real_estate_eviction:
+        * Method POST (Accepts post data)
+    * Performs some feature engineering based on inputs (these are hidden from public view)
+    * Sends the input features to a module in real_estate_services
+    * A Model is loaded that is stored in GCS storage bucket
+    * Returns a prediction of real estate eviction
+''' 
 @app.route('/predict', methods=['POST'])
 def predict_real_estate_eviction():
     """
