@@ -60,12 +60,14 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 }
 
+/*
 resource "google_artifact_registry_repository" "my_app_repo" {
   location      = var.region
   repository_id = "eviction-microservices-repo"
   description   = "Docker repository for ML microservices"
   format        = "DOCKER"
 }
+*/
 
 # Create a Cloud Router (required for NAT)
 resource "google_compute_router" "router" {

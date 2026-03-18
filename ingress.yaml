@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-inference-ingress
+  annotations:
+    # Binds the Ingress to a Reserved Global Static IP in GCP for DNS stability
+    kubernetes.io/ingress.global-static-ip-name: "YOUR_STATIC_IP_NAME"
+    # Provisions a Google-managed SSL certificate for automatic HTTPS (TLS)
+    networking.gke.io/managed-certificates: "YOUR_MANAGED_CERT_NAME"
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: "jagpalholdings.com"
+    http:
+      paths:
+      - path: /RealEstateEvictionServices
+        pathType: Prefix
+        backend:
+          service:
+            name: real-estate-service
+            port:
+              number: 80
+  - host: "jagpalholdings.com"
+    http:
+      paths:
+      - path: /getdata
+        pathType: Prefix
+        backend:
+          service:
+            name: stock-data-service
+            port:
+              number: 80

@@ -1,0 +1,297 @@
+nohup: ignoring input
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # google_compute_firewall.allow_http[0m will be created
+[0m  [32m+[0m[0m resource "google_compute_firewall" "allow_http" {
+      [32m+[0m[0m creation_timestamp = (known after apply)
+      [32m+[0m[0m destination_ranges = (known after apply)
+      [32m+[0m[0m direction          = (known after apply)
+      [32m+[0m[0m enable_logging     = (known after apply)
+      [32m+[0m[0m id                 = (known after apply)
+      [32m+[0m[0m name               = "allow-http-ingress"
+      [32m+[0m[0m network            = "mlops-vpc"
+      [32m+[0m[0m priority           = 1000
+      [32m+[0m[0m project            = "machine-learning-416604"
+      [32m+[0m[0m self_link          = (known after apply)
+      [32m+[0m[0m source_ranges      = [
+          [32m+[0m[0m "0.0.0.0/0",
+        ]
+
+      [32m+[0m[0m allow {
+          [32m+[0m[0m ports    = [
+              [32m+[0m[0m "80",
+              [32m+[0m[0m "8080",
+            ]
+          [32m+[0m[0m protocol = "tcp"
+        }
+    }
+
+[1m  # google_compute_network.vpc_network[0m will be created
+[0m  [32m+[0m[0m resource "google_compute_network" "vpc_network" {
+      [32m+[0m[0m auto_create_subnetworks                   = false
+      [32m+[0m[0m bgp_always_compare_med                    = (known after apply)
+      [32m+[0m[0m bgp_best_path_selection_mode              = (known after apply)
+      [32m+[0m[0m bgp_inter_region_cost                     = (known after apply)
+      [32m+[0m[0m delete_bgp_always_compare_med             = false
+      [32m+[0m[0m delete_default_routes_on_create           = false
+      [32m+[0m[0m gateway_ipv4                              = (known after apply)
+      [32m+[0m[0m id                                        = (known after apply)
+      [32m+[0m[0m internal_ipv6_range                       = (known after apply)
+      [32m+[0m[0m mtu                                       = (known after apply)
+      [32m+[0m[0m name                                      = "mlops-vpc"
+      [32m+[0m[0m network_firewall_policy_enforcement_order = "AFTER_CLASSIC_FIREWALL"
+      [32m+[0m[0m network_id                                = (known after apply)
+      [32m+[0m[0m numeric_id                                = (known after apply)
+      [32m+[0m[0m project                                   = "machine-learning-416604"
+      [32m+[0m[0m routing_mode                              = (known after apply)
+      [32m+[0m[0m self_link                                 = (known after apply)
+    }
+
+[1m  # google_compute_router.router[0m will be created
+[0m  [32m+[0m[0m resource "google_compute_router" "router" {
+      [32m+[0m[0m creation_timestamp = (known after apply)
+      [32m+[0m[0m id                 = (known after apply)
+      [32m+[0m[0m name               = "gke-router"
+      [32m+[0m[0m network            = "mlops-vpc"
+      [32m+[0m[0m project            = "machine-learning-416604"
+      [32m+[0m[0m region             = "us-central1"
+      [32m+[0m[0m self_link          = (known after apply)
+    }
+
+[1m  # google_compute_router_nat.nat[0m will be created
+[0m  [32m+[0m[0m resource "google_compute_router_nat" "nat" {
+      [32m+[0m[0m auto_network_tier                   = (known after apply)
+      [32m+[0m[0m drain_nat_ips                       = (known after apply)
+      [32m+[0m[0m enable_dynamic_port_allocation      = (known after apply)
+      [32m+[0m[0m enable_endpoint_independent_mapping = (known after apply)
+      [32m+[0m[0m endpoint_types                      = (known after apply)
+      [32m+[0m[0m icmp_idle_timeout_sec               = 30
+      [32m+[0m[0m id                                  = (known after apply)
+      [32m+[0m[0m min_ports_per_vm                    = (known after apply)
+      [32m+[0m[0m name                                = "gke-nat"
+      [32m+[0m[0m nat_ip_allocate_option              = "AUTO_ONLY"
+      [32m+[0m[0m nat_ips                             = (known after apply)
+      [32m+[0m[0m project                             = "machine-learning-416604"
+      [32m+[0m[0m region                              = "us-central1"
+      [32m+[0m[0m router                              = "gke-router"
+      [32m+[0m[0m source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+      [32m+[0m[0m tcp_established_idle_timeout_sec    = 1200
+      [32m+[0m[0m tcp_time_wait_timeout_sec           = 120
+      [32m+[0m[0m tcp_transitory_idle_timeout_sec     = 30
+      [32m+[0m[0m type                                = "PUBLIC"
+      [32m+[0m[0m udp_idle_timeout_sec                = 30
+    }
+
+[1m  # google_compute_subnetwork.gke_subnet[0m will be created
+[0m  [32m+[0m[0m resource "google_compute_subnetwork" "gke_subnet" {
+      [32m+[0m[0m allow_subnet_cidr_routes_overlap = (known after apply)
+      [32m+[0m[0m creation_timestamp               = (known after apply)
+      [32m+[0m[0m external_ipv6_prefix             = (known after apply)
+      [32m+[0m[0m fingerprint                      = (known after apply)
+      [32m+[0m[0m gateway_address                  = (known after apply)
+      [32m+[0m[0m id                               = (known after apply)
+      [32m+[0m[0m internal_ipv6_prefix             = (known after apply)
+      [32m+[0m[0m ip_cidr_range                    = "10.0.0.0/24"
+      [32m+[0m[0m ipv6_cidr_range                  = (known after apply)
+      [32m+[0m[0m ipv6_gce_endpoint                = (known after apply)
+      [32m+[0m[0m name                             = "gke-subnet"
+      [32m+[0m[0m network                          = (known after apply)
+      [32m+[0m[0m private_ip_google_access         = (known after apply)
+      [32m+[0m[0m private_ipv6_google_access       = (known after apply)
+      [32m+[0m[0m project                          = "machine-learning-416604"
+      [32m+[0m[0m purpose                          = (known after apply)
+      [32m+[0m[0m region                           = (known after apply)
+      [32m+[0m[0m self_link                        = (known after apply)
+      [32m+[0m[0m stack_type                       = (known after apply)
+      [32m+[0m[0m state                            = (known after apply)
+      [32m+[0m[0m subnetwork_id                    = (known after apply)
+    }
+
+[1m  # google_container_cluster.primary[0m will be created
+[0m  [32m+[0m[0m resource "google_container_cluster" "primary" {
+      [32m+[0m[0m cluster_ipv4_cidr                        = (known after apply)
+      [32m+[0m[0m datapath_provider                        = (known after apply)
+      [32m+[0m[0m default_max_pods_per_node                = (known after apply)
+      [32m+[0m[0m deletion_protection                      = false
+      [32m+[0m[0m disable_l4_lb_firewall_reconciliation    = false
+      [32m+[0m[0m effective_labels                         = {
+          [32m+[0m[0m "goog-terraform-provisioned" = "true"
+        }
+      [32m+[0m[0m enable_cilium_clusterwide_network_policy = false
+      [32m+[0m[0m enable_fqdn_network_policy               = false
+      [32m+[0m[0m enable_intranode_visibility              = (known after apply)
+      [32m+[0m[0m enable_kubernetes_alpha                  = false
+      [32m+[0m[0m enable_l4_ilb_subsetting                 = (known after apply)
+      [32m+[0m[0m enable_legacy_abac                       = false
+      [32m+[0m[0m enable_multi_networking                  = false
+      [32m+[0m[0m enable_shielded_nodes                    = true
+      [32m+[0m[0m endpoint                                 = (known after apply)
+      [32m+[0m[0m id                                       = (known after apply)
+      [32m+[0m[0m initial_node_count                       = 1
+      [32m+[0m[0m label_fingerprint                        = (known after apply)
+      [32m+[0m[0m location                                 = "us-central1-a"
+      [32m+[0m[0m logging_service                          = (known after apply)
+      [32m+[0m[0m master_version                           = (known after apply)
+      [32m+[0m[0m monitoring_service                       = (known after apply)
+      [32m+[0m[0m name                                     = "ml-inference-cluster"
+      [32m+[0m[0m network                                  = "mlops-vpc"
+      [32m+[0m[0m networking_mode                          = (known after apply)
+      [32m+[0m[0m node_locations                           = (known after apply)
+      [32m+[0m[0m node_version                             = (known after apply)
+      [32m+[0m[0m operation                                = (known after apply)
+      [32m+[0m[0m private_ipv6_google_access               = (known after apply)
+      [32m+[0m[0m project                                  = (known after apply)
+      [32m+[0m[0m remove_default_node_pool                 = true
+      [32m+[0m[0m self_link                                = (known after apply)
+      [32m+[0m[0m services_ipv4_cidr                       = (known after apply)
+      [32m+[0m[0m subnetwork                               = "gke-subnet"
+      [32m+[0m[0m terraform_labels                         = {
+          [32m+[0m[0m "goog-terraform-provisioned" = "true"
+        }
+      [32m+[0m[0m tpu_ipv4_cidr_block                      = (known after apply)
+    }
+
+[1m  # google_container_node_pool.primary_nodes[0m will be created
+[0m  [32m+[0m[0m resource "google_container_node_pool" "primary_nodes" {
+      [32m+[0m[0m cluster                     = "ml-inference-cluster"
+      [32m+[0m[0m id                          = (known after apply)
+      [32m+[0m[0m initial_node_count          = (known after apply)
+      [32m+[0m[0m instance_group_urls         = (known after apply)
+      [32m+[0m[0m location                    = "us-central1-a"
+      [32m+[0m[0m managed_instance_group_urls = (known after apply)
+      [32m+[0m[0m max_pods_per_node           = (known after apply)
+      [32m+[0m[0m name                        = "spot-node-pool"
+      [32m+[0m[0m name_prefix                 = (known after apply)
+      [32m+[0m[0m node_count                  = 2
+      [32m+[0m[0m node_locations              = (known after apply)
+      [32m+[0m[0m operation                   = (known after apply)
+      [32m+[0m[0m project                     = "machine-learning-416604"
+      [32m+[0m[0m version                     = (known after apply)
+
+      [32m+[0m[0m node_config {
+          [32m+[0m[0m disk_size_gb     = (known after apply)
+          [32m+[0m[0m disk_type        = (known after apply)
+          [32m+[0m[0m effective_taints = (known after apply)
+          [32m+[0m[0m image_type       = (known after apply)
+          [32m+[0m[0m labels           = {
+              [32m+[0m[0m "env"      = "dev"
+              [32m+[0m[0m "workload" = "ml-inference"
+            }
+          [32m+[0m[0m local_ssd_count  = (known after apply)
+          [32m+[0m[0m logging_variant  = (known after apply)
+          [32m+[0m[0m machine_type     = "e2-medium"
+          [32m+[0m[0m metadata         = (known after apply)
+          [32m+[0m[0m min_cpu_platform = (known after apply)
+          [32m+[0m[0m oauth_scopes     = [
+              [32m+[0m[0m "https://www.googleapis.com/auth/cloud-platform",
+            ]
+          [32m+[0m[0m preemptible      = false
+          [32m+[0m[0m service_account  = "default"
+          [32m+[0m[0m spot             = true
+        }
+    }
+
+[1mPlan:[0m 7 to add, 0 to change, 0 to destroy.
+[0m[0m[1mgoogle_compute_network.vpc_network: Creating...[0m[0m
+[0m[1mgoogle_compute_network.vpc_network: Still creating... [10s elapsed][0m[0m
+[0m[1mgoogle_compute_network.vpc_network: Still creating... [20s elapsed][0m[0m
+[0m[1mgoogle_compute_network.vpc_network: Creation complete after 21s [id=projects/machine-learning-416604/global/networks/mlops-vpc][0m
+[0m[1mgoogle_compute_router.router: Creating...[0m[0m
+[0m[1mgoogle_compute_subnetwork.gke_subnet: Creating...[0m[0m
+[0m[1mgoogle_compute_firewall.allow_http: Creating...[0m[0m
+[0m[1mgoogle_compute_router.router: Still creating... [10s elapsed][0m[0m
+[0m[1mgoogle_compute_firewall.allow_http: Still creating... [10s elapsed][0m[0m
+[0m[1mgoogle_compute_subnetwork.gke_subnet: Still creating... [10s elapsed][0m[0m
+[0m[1mgoogle_compute_firewall.allow_http: Creation complete after 11s [id=projects/machine-learning-416604/global/firewalls/allow-http-ingress][0m
+[0m[1mgoogle_compute_router.router: Creation complete after 11s [id=projects/machine-learning-416604/regions/us-central1/routers/gke-router][0m
+[0m[1mgoogle_compute_router_nat.nat: Creating...[0m[0m
+[0m[1mgoogle_compute_subnetwork.gke_subnet: Still creating... [20s elapsed][0m[0m
+[0m[1mgoogle_compute_subnetwork.gke_subnet: Creation complete after 21s [id=projects/machine-learning-416604/regions/us-central1/subnetworks/gke-subnet][0m
+[0m[1mgoogle_compute_router_nat.nat: Still creating... [10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Creating...[0m[0m
+[0m[1mgoogle_compute_router_nat.nat: Creation complete after 12s [id=machine-learning-416604/us-central1/gke-router/gke-nat][0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [1m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [1m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [1m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [1m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [1m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [1m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [2m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [2m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [2m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [2m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [2m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [2m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [3m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [3m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [3m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [3m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [3m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [3m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [4m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [4m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [4m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [4m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [4m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [4m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [5m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [5m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [5m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [5m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [5m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [5m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [6m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [6m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [6m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [6m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [6m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [6m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [7m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [7m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [7m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [7m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [7m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [7m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [8m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [8m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [8m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [8m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [8m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [8m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [9m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [9m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [9m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [9m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [9m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [9m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [10m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [10m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [10m20s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [10m30s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [10m40s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [10m50s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [11m0s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Still creating... [11m10s elapsed][0m[0m
+[0m[1mgoogle_container_cluster.primary: Creation complete after 11m19s [id=projects/machine-learning-416604/locations/us-central1-a/clusters/ml-inference-cluster][0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Creating...[0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Still creating... [10s elapsed][0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Still creating... [20s elapsed][0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Still creating... [30s elapsed][0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Still creating... [40s elapsed][0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Still creating... [50s elapsed][0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Still creating... [1m0s elapsed][0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Still creating... [1m10s elapsed][0m[0m
+[0m[1mgoogle_container_node_pool.primary_nodes: Creation complete after 1m12s [id=projects/machine-learning-416604/locations/us-central1-a/clusters/ml-inference-cluster/nodePools/spot-node-pool][0m
+[0m[1m[32m
+Apply complete! Resources: 7 added, 0 changed, 0 destroyed.
+[0m
