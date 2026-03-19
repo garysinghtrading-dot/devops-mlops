@@ -1,15 +1,22 @@
 name: CI/CD Pipeline - Test, Build, and Deploy to GCP
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+# 🚨 Workflow Suspended for Refactoring
+# NEW HTTP ENDPOINTS MONITORING SERVICES ARE BEING ADDED
+# SO CURRENTLY CICD PIPELINE WILL BE SUSPENDED, ONLY TRIGGER ON MANUAL WORKFLOW
+# ONCE UPDATES ARE COMPLETE THEN WE CAN DEPLOY AUTOMATICALLY
+on: 
+  workflow_dispatch: # Allows ONLY manual triggering via the GitHub UI "Run workflow" button
+# push:
+#   branches: [ "main" ]
+# pull_request:
+#   branches: [ "main" ]
+# repository_dispatch:
+#   types: [anomaly_detected_scaling]
 
 env:
-  PROJECT_ID: machine-learning-416604
-  REGION: us-central1
-  REPO_NAME: eviction-microservices-repo # Make sure this matches your Terraform Artifact Registry name
+  PROJECT_ID: "${{ secrets.ML_PROJECT_ID }}"
+  REGION: "${{ secrets.GCP_REGION }}"
+  REPO_NAME: "${{ secrets.REPO_NAME }}"
   CLUSTER_NAME: ml-inference-cluster
 
 jobs:
