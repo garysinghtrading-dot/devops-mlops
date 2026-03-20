@@ -80,6 +80,18 @@ A secure authentication microservice that:
 
 This service is **internal‑only** (ClusterIP) and not exposed to the public internet.
 
+## ✅ Current State
+
+The system is actively under development. The following components are fully implemented and working:
+
+- Infrastructure as Code (Terraform) provisions a cluster and deploys services
+- Microservice architecture is established and operational
+- Real Estate Eviction Service backend is implemented
+  - Loads a trained `.joblib` model
+  - Performs prediction on eviction risk
+  - Exposes results through a service endpoint
+
+Additional microservices and workflows are being added incrementally.
 ---
 
 # 🏛️ **About Jagpal Holdings Company**
