@@ -1,4 +1,4 @@
-# Stock Data Service
+# Stock Data Service - Jagpal Holdings Company
 
 ## 🧩 Overview
 
