@@ -1,46 +1,71 @@
-# 📈 Stock Data Service: Quantitative Analysis Engine
+# Stock Data Service
 
-The **Stock Data Service** is a high-performance microservice designed to provide real-time statistical insights into security price action. It leverages advanced proprietary models to help traders identify structural market imbalances and mean-reversion opportunities.
+## 🧩 Overview
 
----
+The Stock Data Service is a stateless microservice responsible for retrieving server-rendered market data views from an AWS-hosted backend.
 
-## 🔬 Core Quantitative Indicators
+It operates strictly as a transport layer between clients and the rendering system, with no embedded business logic or market data processing.
 
-To protect Jagpal Holdings' intellectual property, the specific computational logic is abstracted behind these high-level statistical metrics:
+## 🏗️ Architecture
 
-### **1. Regime Equilibrium Offset**
-* **Definition**: A measure of the instantaneous spatial divergence between the current market price and the dynamically calculated **stochastic centroid**.
-* **Scientific Context**: This metric quantifies the displacement from the primary structural anchor of the current market regime. It identifies when a security has drifted beyond its statistically "stable" zone without revealing the underlying clustering methodology.
+The service follows a clear separation between request handling and computation.
 
-### **2. Liquidity Density Gap**
-* **Definition**: An analysis of price-action voids relative to **high-order volumetric concentration zones**.
-* **Scientific Context**: Rather than focusing on simple trade frequency, this index measures the divergence from areas of maximum historical price-convergence. It highlights "liquidity vacuums" where price discovery is most likely to accelerate or stall.
+**Request Flow:**
 
-### **3. Trend Velocity Index**
-* **Definition**: The normalized rate of change in price directionality over a rolling temporal window.
-* **Scientific Context**: This index provides a dimensionless value representing the "momentum-force" of the current trend, allowing for a standardized comparison of speed across different asset classes.
+1. A client sends a request with query parameters (e.g., symbol or identifier)
+2. The Stock Data Service forwards the request to a designated AWS endpoint
+3. The AWS backend performs all computation and conditional logic
+4. A fully rendered HTML response is returned to the service
+5. The service relays the response back to the client
 
-### **4. Mean Reversion Potential**
-* **Definition**: A probabilistic assessment of the price’s **elastic displacement** relative to its established **equilibrium trajectory**.
-* **Scientific Context**: This treats price movement as an elastic system returning to a state of lower entropy. It calculates the likelihood of a corrective phase based on how far the current price has deviated from its projected statistical path.
 
----
+## 🔒 Separation of Responsibilities
 
-## 🏗️ Architectural Implementation
+The system is designed to enforce strict boundaries between infrastructure and proprietary logic.
 
-As with our other core services, the Stock Data Service follows a strictly decoupled architecture:
+### Stock Data Service
+- Handles inbound HTTP requests
+- Forwards query parameters to AWS
+- Returns rendered HTML responses
+- Maintains no local state or computation
 
-* **GKE Integration**: Deployed as an independent container within the `ml-inference` spot-node pool for cost-optimized scaling.
-* **Isolated Logic**: The core mathematical transformations are handled by a "Black Box" logic engine. The public-facing Flask API acts solely as a secure proxy, fetching pre-rendered analytical components via authenticated server-side requests.
-* **Data Sourcing**: High-fidelity market data is ingested and processed internally, ensuring that the raw inputs to our proprietary indicators are never exposed to the public internet.
+### AWS Backend
+- Executes all business logic and conditional processing
+- Performs market data analysis and transformations
+- Generates final rendered outputs
 
----
+## 🛡️ Intellectual Property Protection
 
-## 🔒 Intellectual Property Protection
+Jagpal Holdings enforces a server-side execution model to protect proprietary algorithms and market-state logic.
 
-The HTML templates and scoring logic for this service are hosted in an isolated environment (AWS). The GKE-hosted microservice utilizes a **Server-Side Request Proxy** pattern to retrieve finalized analytical views. 
+Within the Stock Data Service:
 
-> **Security Note:** This architecture ensures that even if the container environment is inspected, the underlying "if/then" scoring thresholds, Jinja2 logic, and algorithmic coefficients remain entirely inaccessible to the public.
+- No business logic, scoring rules, or conditional branches are implemented
+- No model parameters, thresholds, or transformations are present
+- No intermediate computation states are stored, logged, or exposed
+
+All sensitive processing occurs exclusively within the AWS backend.
+
+As a result:
+
+- Clients interact only with final rendered outputs
+- The service provides no direct visibility into internal decision-making
+- Proprietary logic remains isolated from this layer by design
+
+## ⚙️ Infrastructure
+
+The service is deployed using Terraform as part of a broader microservices architecture.
+
+Key characteristics:
+- Stateless design for horizontal scalability
+- Clear isolation of responsibilities across services
+- Secure boundary between public-facing infrastructure and private computation layers
+
+## 📌 Design Notes
+
+- This service is intentionally minimal and should not contain business logic
+- Any changes to computation or decision-making must be implemented in the AWS backend
+- The service should be treated as a stable interface layer within the system architecture
 
 ---
 **Developed by** **Gurpreet Singh Jagpal** Founder, Jagpal Holdings Company
