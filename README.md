@@ -66,7 +66,8 @@ A microservice designed to help traders understand:
 - whether mean reversion is likely  
 
 Jagpal Holdings actively trades securities, and this service exposes some of the quantitative insights used internally.
-
+Detailed architecture:  
+`docs/architecture/stock-data-services.md`
 ---
 
 ## **3. Login Service (Coming Soon)**
