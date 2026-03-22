@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket  = "tf-state-machine-learning-416604"
+    bucket  = var.bucket_name
     prefix  = "terraform/state"
   }
 }

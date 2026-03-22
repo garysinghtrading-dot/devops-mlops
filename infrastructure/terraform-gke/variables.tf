@@ -20,3 +20,9 @@ variable "machine_type" {
   type        = string
   default     = "e2-medium"
 }
+
+variable "bucket_name" {
+  description = "Bucket Name"
+  type        = string
+  default     = SYS.BUCKET_NAME_GKE_INSTANCE
+}
