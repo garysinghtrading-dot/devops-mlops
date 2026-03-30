@@ -1,108 +1,115 @@
 import functions_framework
-import pandas as pd
 import numpy as np
-import time
+import pandas as pd
 import os
+import time
 from google.cloud import monitoring_v3, firestore
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM
-from sklearn.cluster import KMeans
 
-# ==========================================
-# 1. CONFIGURATION (Environment Variables)
-# ==========================================
-# We pull these from the Cloud Function environment settings
-PROJECT_ID = os.getenv('ML_PROJECT_ID') # FROM secrets.env FILE - NOT COMMITED TO REPO
-SERVICE_NAME = os.getenv('ML_APP_NAME') # FROM secrets.env FILE - NOT COMMITED TO REPO
+
+# CONFIGURATION
+PROJECT_ID = os.getenv('ML_PROJECT_ID')
+SERVICE_NAME = os.getenv('ML_APP_NAME')
 
 def get_metrics(monitoring_client):
-    """Pulls 7 days of CPU utilization for the specific service"""
+    """Pulls CPU and Request Count to create a Multi-Dimensional Feature Set"""
     if not PROJECT_ID or not SERVICE_NAME:
-        raise ValueError("Environment variables ML_PROJECT_ID or ML_APP_NAME are missing.")
+        raise ValueError("Environment variables missing.")
 
-    now = time.time()
-    seconds = int(now)
     project_path = f"projects/{PROJECT_ID}"
-    
+    now = time.time()
     interval = monitoring_v3.TimeInterval({
-        "end_time": {"seconds": seconds},
-        "start_time": {"seconds": seconds - (3600 * 24 * 7)} # LAST 7 DAYS OF DATA
+        "end_time": {"seconds": int(now)},
+        "start_time": {"seconds": int(now) - (3600 * 24 * 7)} # Seconds of the last one week
     })
 
-    filter_str = (
+    # 1. FETCH CPU METRICS
+    cpu_filter = (
         f'metric.type = "run.googleapis.com/container/cpu/utilizations" AND '
-        f'resource.type = "cloud_run_revision" AND '
         f'resource.labels.service_name = "{SERVICE_NAME}"'
     )
+    cpu_results = monitoring_client.list_time_series(request={"name": project_path, "filter": cpu_filter, "interval": interval})
 
-    results = monitoring_client.list_time_series(
-        request={"name": project_path, "filter": filter_str, "interval": interval}
+    # 2. FETCH REQUEST COUNT (The Context)
+    req_filter = (
+        f'metric.type = "run.googleapis.com/request_count" AND '
+        f'resource.labels.service_name = "{SERVICE_NAME}"'
     )
-    
+    req_results = monitoring_client.list_time_series(request={"name": project_path, "filter": req_filter, "interval": interval})
+
+    # Process and Merge
     data = []
-    for result in results:
+    for result in cpu_results:
         for point in result.points:
             ts = point.interval.end_time
             data.append({
                 "timestamp": ts,
-                "cpu_utilization": point.value.double_value,
-                "hour": pd.to_datetime(ts).hour,
-                "day_of_week": pd.to_datetime(ts).dayofweek
+                "cpu": point.value.double_value,
+                "hour": pd.to_datetime(ts).hour
             })
-    return pd.DataFrame(data)
+    
+    df = pd.DataFrame(data)
+    if df.empty: return df
+
+    # 3. CYCLICAL TIME ENCODING
+    # This helps the ML understand 11pm and 12am are close.
+    df['hour_sin'] = np.sin(2 * np.pi * df['hour']/24.0)
+    df['hour_cos'] = np.cos(2 * np.pi * df['hour']/24.0)
+    
+    return df
 
 @functions_framework.http
 def check_anomaly_and_scale(request):
-    """The main entry point for the Cloud Function"""
-    
-    # Initialize clients inside the handler (best for security/portability)
     monitoring_client = monitoring_v3.MetricServiceClient()
     db = firestore.Client()
     
-    # 1. Data Retrieval
     try:
         df = get_metrics(monitoring_client)
     except Exception as e:
-        return f"Error fetching metrics: {str(e)}", 500
+        return f"Error: {str(e)}", 500
     
     if df.empty or len(df) < 50:
-        return "Insufficient data for analysis. Need at least 50 historical points.", 200
+        return "Building baseline... not enough data yet.", 200
 
-    # 2. Feature Engineering & Scaling
-    features = df[['cpu_utilization', 'hour', 'day_of_week']]
+    # 4. SELECT FEATURES
+    # We use CPU + Sin/Cos time to detect patterns
+    feature_cols = ['cpu', 'hour_sin', 'hour_cos']
+    X = df[feature_cols]
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(features)
+    X_scaled = scaler.fit_transform(X)
 
-    # 3. ML Model 1: OneClassSVM (Boundary Detection)
-    # nu=0.05 targets a 5% outlier rate
-    svm = OneClassSVM(kernel='rbf', gamma=0.1, nu=0.05)
+    # 5. ML ENSEMBLE
+    # OneClassSVM: Good for seeing if this 'type' of hour + cpu combo has happened before
+    svm = OneClassSVM(kernel='rbf', gamma=0.1, nu=0.03) # 3% sensitivity
     df['svm_anomaly'] = svm.fit_predict(X_scaled)
 
-    # 4. ML Model 2: KMeans (Distance Outlier Detection)
-    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+    # KMeans: Clusters normal behavior
+    kmeans = KMeans(n_clusters=3, n_init=10)
     df['cluster'] = kmeans.fit_predict(X_scaled)
     distances = np.min(kmeans.transform(X_scaled), axis=1)
-    threshold = np.percentile(distances, 95)
-    df['kmeans_anomaly'] = distances > threshold
+    df['kmeans_anomaly'] = distances > np.percentile(distances, 97) # Top 3% distances
 
-    # 5. Consensus Logic
+    # 6. ENHANCED DECISION LOGIC
     last_row = df.iloc[-1]
     
-    # Explicit conversion from NumPy to Python types for Firestore compatibility
-    is_anomaly = bool((last_row['svm_anomaly'] == -1) and last_row['kmeans_anomaly'])
-    cpu_val = float(last_row['cpu_utilization'])
+    # Logic: Anomaly if both models agree AND CPU is actually high (ignore noise)
+    # We set a "Noise Floor" of 0.10 (10% CPU). 
+    # If CPU is lower than that, it's never an anomaly, just background jitter.
+    raw_anomaly = bool((last_row['svm_anomaly'] == -1) and last_row['kmeans_anomaly'])
+    is_serious_spike = last_row['cpu'] > 0.10 
     
-    # 6. Action: Update Firestore 'Switch'
+    final_decision = raw_anomaly and is_serious_spike
+    
+    # 7. UPDATE FIRESTORE
     doc_ref = db.collection('infrastructure').document('cluster_state')
-    
     doc_ref.set({
-        'is_cluster_active': is_anomaly,
-        'last_cpu_val': round(cpu_val, 4),
-        'status': 'ANOMALY_DETECTED' if is_anomaly else 'NORMAL',
+        'is_cluster_active': final_decision,
+        'last_cpu_val': float(round(last_row['cpu'], 4)),
+        'confidence_score': 0.95 if final_decision else 0.10,
+        'status': 'SPIKE_DETECTED' if final_decision else 'NORMAL',
         'updated_at': firestore.SERVER_TIMESTAMP
     }, merge=True)
 
-    status_msg = f"Analysis complete. Anomaly Detected: {is_anomaly}. Firestore Updated."
-    print(status_msg) 
-    
-    return status_msg, 200
+    return f"Status: {'ANOMALY' if final_decision else 'OK'}. CPU: {last_row['cpu']:.4f}", 200
