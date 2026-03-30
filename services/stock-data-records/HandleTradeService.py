@@ -171,3 +171,77 @@ class TradeService:
         conn.commit()
         conn.close()
         return None
+
+    def add_option_trade(self, user_id, symbol, strike, expiration, option_type,
+                        action, quantity, price):
+        conn = self._get_db()
+        cur = conn.cursor()
+
+        # Map UI action to DB semantics
+        if action == "Buy to Open":
+            trade_action = "buy"
+            side = "long"
+        elif action == "Sell to Open":
+            trade_action = "sell"
+            side = "short"
+        elif action == "Buy to Close":
+            trade_action = "buy"
+            side = "short"
+        elif action == "Sell to Close":
+            trade_action = "sell"
+            side = "long"
+        else:
+            raise ValueError("Invalid option action")
+
+        # Insert into trades table
+        cur.execute("""
+            INSERT INTO trades (user_id, trade_type, action, date, ticker_symbol, notes)
+            VALUES (?, 'option', ?, DATE('now'), ?, NULL)
+        """, (user_id, trade_action, symbol))
+
+        trade_id = cur.lastrowid
+
+        # Insert into trade_legs table
+        cur.execute("""
+            INSERT INTO trade_legs (
+                trade_id, asset_type, ticker, quantity, price,
+                strike, expiration, option_type, side
+            )
+            VALUES (?, 'option', ?, ?, ?, ?, ?, ?, ?)
+        """, (trade_id, symbol, quantity, price, strike, expiration, option_type, side))
+
+        conn.commit()
+        conn.close()
+
+    def get_open_option_positions(self, user_id, symbol):
+        conn = self.get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT strike, expiration, option_type,
+                SUM(CASE WHEN side='long' THEN quantity ELSE 0 END) AS long_qty,
+                SUM(CASE WHEN side='short' THEN quantity ELSE 0 END) AS short_qty
+            FROM trade_legs
+            JOIN trades ON trades.trade_id = trade_legs.trade_id
+            WHERE trades.user_id = ?
+            AND trade_legs.asset_type = 'option'
+            AND trade_legs.ticker = ?
+            GROUP BY strike, expiration, option_type
+        """, (user_id, symbol))
+
+        rows = cur.fetchall()
+        conn.close()
+
+        # Filter only open positions
+        open_positions = []
+        for r in rows:
+            net = r["long_qty"] - r["short_qty"]
+            if net != 0:
+                open_positions.append({
+                    "strike": r["strike"],
+                    "expiration": r["expiration"],
+                    "option_type": r["option_type"],
+                    "net_contracts": net
+                })
+
+        return open_positions

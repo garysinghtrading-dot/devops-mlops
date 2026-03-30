@@ -50,6 +50,37 @@ def update():
     # Use url_for for better path management with Ingress
     return redirect(url_for("landing"))
 
+@app.route("/api/open_positions/<symbol>")
+def get_open_positions(symbol):
+    user_id = trade_service.get_user_id("demo_user")
+    positions = trade_service.get_open_option_positions(user_id, symbol.upper())
+    return jsonify(positions)
+
+@app.route("/add_option_trade", methods=["POST"])
+def add_option_trade():
+    user_id = trade_service.get_user_id("demo_user")
+
+    symbol = request.form.get("symbol").upper()
+    strike = float(request.form.get("strike"))
+    expiration = request.form.get("expiration")
+    option_type = request.form.get("option_type")
+    action = request.form.get("action")
+    quantity = int(request.form.get("quantity"))
+    price = float(request.form.get("price"))
+
+    trade_service.add_option_trade(
+        user_id=user_id,
+        symbol=symbol,
+        strike=strike,
+        expiration=expiration,
+        option_type=option_type,
+        action=action,
+        quantity=quantity,
+        price=price
+    )
+
+    return redirect("/")
+
 if __name__ == "__main__":
     # Ensure port matches your Dockerfile/Deployment.yaml
     port = int(os.environ.get("PORT", 8080))
