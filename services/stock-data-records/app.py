@@ -5,10 +5,6 @@ from HandleTradeService import TradeService
 
 app = Flask(__name__)
 
-# Required for session-based flashing. 
-# In production, move this to an environment variable.
-app.secret_key = os.environ.get("SECRET_KEY", "jagpal-holdings-secret-123")
-
 # Tell Flask it is behind a proxy (Ingress) so url_for handles sub-paths correctly
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
