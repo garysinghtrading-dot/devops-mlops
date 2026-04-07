@@ -75,7 +75,7 @@ def add_option_trade():
         price=price
     )
 
-    return redirect("/")
+    return redirect("/?transaction=option_added")
 
 if __name__ == "__main__":
     # Ensure port matches your Dockerfile/Deployment.yaml
